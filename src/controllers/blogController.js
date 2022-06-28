@@ -21,7 +21,7 @@ const createBlog = async function (req, res) {
         .send({ status: false, msg: "Please Enter Title!" });
     }
     if (!newBlogEntry.body) {
-      res.status(400).send({ status: false, msg: "Please Enter Title!" });
+      res.status(400).send({ status: false, msg: "Please Enter body!" });
       return;
     }
     if (!newBlogEntry.author_id) {
@@ -98,11 +98,11 @@ const updateBlog = async function (req, res) {
         .send({ status: false, msg: "Please Enter Details to update" });
     }
     //Checking for valid authorId from body
-    if (blogDocument.author_id !== req.loggedInAuthor) {
-      return res
-        .status(400)
-        .send({ status: false, msg: "Entering invalid authorId" });
-    }
+    // if (blogDocument.author_id !== req.loggedInAuthor) {
+    //   return res
+    //     .status(400)
+    //     .send({ status: false, msg: "Entering invalid authorId" });
+    // }
     //Finding the document in the blogs collection on the basis of blogId given in path param
     let isBlogIdExists = await blogModel.find({
       $and: [{ _id: blogId }, { isDeleted: false }],
