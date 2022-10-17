@@ -15,6 +15,7 @@ const authentication = async function (req, res, next) {
     if (!decodeToken) {
       return res.status(401).send({ status: false, msg: "Token is invalid" });
     }
+    req.loggedInAuthor = decodeToken.authorId;
     next();
   } catch (err) {
     return res.status(500).send({ status: false, msg: err.message });
@@ -28,6 +29,25 @@ const authorisation = async function (req, res, next) {
     const loggedInAuthorId = decodeToken.authorId;
     const blogId = req.params.blogId;
     const filterData = req.query;
+    let filter = {};
+    if (filterData.category) {
+      filter.category = filterData.category.trim();
+    }
+    if (filterData.tags) {
+      let tagArr = filterData.tags.split(",").map((x) => x.trim());
+      filter.tags = { $in: tagArr };
+    }
+    if (filterData.subcategory) {
+      let subcategoryArr = filterData.subcategory.split(",").map((x) => x.trim());
+      filter.subcategory = { $in: subcategoryArr };
+    }
+    if(filterData.isPublished){
+      isPublishedValInStr = filterData.isPublished.trim();
+      if(isPublishedValInStr === 'true'){
+        filter.isPublished = true
+      }
+      filter.isPublished = false
+    }
     let authorIdToBeModified;
     if (blogId) {
       let author = await blogModel
@@ -39,10 +59,8 @@ const authorisation = async function (req, res, next) {
       authorIdToBeModified = author.author_id.toString();
     } else {
       //getting authorId from query param if Blogid is not given in path param
-      console.log(filterData);
-      let author = await blogModel.find({
-        $and: [filterData, { isDeleted: false }],
-      });
+      console.log(filter);
+      let author = await blogModel.find(filter);
       console.log(author);
       if (author.length === 0) {
         return res.status(400).send({ status: false, msg: "Blog not found" });
@@ -62,7 +80,7 @@ const authorisation = async function (req, res, next) {
         msg: "Author has no permission to change other author's blog",
       });
     }
-    req.loggedInAuthor = decodeToken.author_id;
+    req.loggedInAuthor = decodeToken.authorId;
     next();
   } catch (err) {
     return res.status(500).send({

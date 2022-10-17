@@ -27,7 +27,7 @@ router.delete(
 );
 router.post("/login", authorController.login);
 router.all("/**", function (req, res) {
-  res.status(404).send({
+  res.status(400).send({
     status: false,
     msg: "The api endpoint not found",
   });

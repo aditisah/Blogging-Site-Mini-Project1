@@ -7,6 +7,8 @@ const jwt = require("jsonwebtoken");
 const isRequestBodyValid = function (reqBody) {
   if (Object.keys(reqBody).length > 0) return true;
 };
+
+//<---------------------Author signing up--------------->
 const createAuthor = async function (req, res) {
   try {
     let author = req.body;
@@ -51,6 +53,7 @@ const createAuthor = async function (req, res) {
     }
     if (!isValidTitle(author.title)) {
       res.status(400).send({ status: false, msg: "Enter valid Title" });
+      return
     }
     if (!author.password) {
       res.status(400).send({ status: false, msg: "Please Enter Password" });
@@ -76,7 +79,7 @@ const createAuthor = async function (req, res) {
       return;
     }
     if (!author.email) {
-      res.status(400).send({ status: false, msg: "Please Enter Password" });
+      res.status(400).send({ status: false, msg: "Please Enter email" });
       return;
     }
     let isEmailValid = validator.validate(author.email);
@@ -104,6 +107,8 @@ const createAuthor = async function (req, res) {
     return;
   }
 };
+
+//<--------------------------login author----------------------->
 
 const login = async function (req, res) {
   try {
