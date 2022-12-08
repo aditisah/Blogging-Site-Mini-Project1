@@ -1,4 +1,3 @@
-const { response } = require("express");
 const authorModel = require("../models/authorModel");
 const blogModel = require("../models/blogModel");
 
@@ -118,6 +117,7 @@ const updateBlog = async function (req, res) {
     let isBlogIdExists = await blogModel.findOne({
       $and: [{ _id: blogId }, { isDeleted: false }],
     });
+    
     //Checking If blog is deleted
     if (!isBlogIdExists) {
       return res.status(404).send({
@@ -125,6 +125,10 @@ const updateBlog = async function (req, res) {
         msg: "Blog does not exist!!",
       });
     }
+    //authorization
+    if(req.loggedInAuthor!==isBlogIdExists.author_id.toString()){
+      return res.status(403).send({status:false,msg:'You are not allowed to update other\'s blog!!'});
+}
     //updating blog with given entries in body If blog is not deleted
     let timeStamps = new Date();
     if(blogDocument.title){
@@ -132,9 +136,6 @@ const updateBlog = async function (req, res) {
     }
     if(blogDocument.body){
       isBlogIdExists.body = blogDocument.body
-    }
-    if(blogDocument.category){
-      isBlogIdExists.category = blogDocument.category
     }
     if(blogDocument.tags){
       isBlogIdExists.tags.push(...blogDocument.tags)
@@ -156,6 +157,7 @@ const updateBlog = async function (req, res) {
       isBlogIdExists.publishedAt = timeStamps;
     }
     if(blogDocument.isPublished === false){
+      isBlogIdExists.isPublished = false;
       isBlogIdExists.publishedAt = ''
     }
     
@@ -185,8 +187,11 @@ const deleteBlog = async function (req, res) {
     const getblog = await blogModel.findOne({ _id: blogId , isDeleted: false });
     //Deleting the blog If undeleted blog with given blogId exists
     if (getblog) {
+      if(req.loggedInAuthor!=getblog.author_id.toString()){
+        return res.status(403).send({status:false,msg:"You are not authorized to delete other's blog!!"})
+      }
       let timeStamp = new Date();
-      let deletedBlog = await blogModel.findOneAndUpdate(
+      await blogModel.findOneAndUpdate(
         { _id: getblog._id },
         { $set: { isDeleted: true, deletedAt: timeStamp } },
         { new: true }
@@ -196,7 +201,7 @@ const deleteBlog = async function (req, res) {
         msg: "Blog is deleted",
       });
     }
-    //Giving response when undeleted with given blogId does not exist
+    //Giving response when either blog not present or if present,is alreday deleted
     return res.status(404).send({
       status: false,
       msg: "Blog is not found",
@@ -244,10 +249,12 @@ const deleteBlogsBySelection = async function (req, res) {
     }
     //Fetching Blogs with given filter object
     let blogDetail = await blogModel
-      .findOne(filter)
-      .select({ isDeleted: 1, _id: 0 });
+      .findOne(filter);
     //Deleting blog if according to filter
     if (blogDetail) {
+      if(req.loggedInAuthor!==blogDetail.author_id.toString()){
+        return res.status(403).send({status:false,msg:"You are not allowed to delete other's blog!!"})
+      }
       let timeStamp = new Date();
       let deleteBlog = await blogModel.updateMany(
         filter,
